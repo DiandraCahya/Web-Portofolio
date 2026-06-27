@@ -79,4 +79,4 @@ This project is available for personal inspiration and educational purposes.
 **Diandra Cahya**
 
 - GitHub: https://github.com/DiandraCahya
-- LinkedIn: https://linkedin.com/in/diandracahyasaputra
+- LinkedIn: [https://linkedin.com/in/diandra-cahya-saputra](https://www.linkedin.com/in/diandra-cahya-saputra-55a2b9326)
