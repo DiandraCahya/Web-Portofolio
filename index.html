@@ -4,28 +4,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIANDRA | Full Stack Engineer</title>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;600&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <title>CHYAS? | Creative Technologist &amp; Kinetic System Architect</title>
+    <meta name="description" content="Portfolio of Chyas? — Creative Technologist &amp; Kinetic System Architect specializing in esoteric interfaces, sub-pixel kinetic computing, and resilient distributed architectures.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=Syncopate:wght@400;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body class="is-scrolling">
+<body class="intro-active">
 
+    <!-- TOP SCROLL PROGRESS BAR -->
+    <div id="scroll-progress-bar" class="scroll-progress-bar"></div>
+
+    <!-- MINIMALIST CLEAN HEADER -->
+    <header class="cyber-hud" id="cyber-hud">
+        <div class="hud-left">
+            <a href="#section-hero" class="hud-brand hover-target" onclick="handleSecretTrigger(event)">
+                <span class="hud-status-dot pulse-dot"></span>
+                <span class="brand-text">Chyas<span class="brand-char char-mystery">?</span></span>
+            </a>
+            <span class="hud-telemetry-badge">
+                <span class="hud-status-dot pulse-dot"></span>
+                <span>[SYS.v2.6 // JKT]</span>
+            </span>
+        </div>
+
+        <div class="hud-right">
+            <nav class="hud-nav" id="hud-nav">
+                <a href="#section-architect" class="hud-nav-link hover-target" data-target="section-architect">ABOUT</a>
+                <a href="#section-skills" class="hud-nav-link hover-target" data-target="section-skills">STACK</a>
+                <a href="#section-experience" class="hud-nav-link hover-target" data-target="section-experience">EXPERIENCE</a>
+                <a href="#section-projects" class="hud-nav-link hover-target" data-target="section-projects">WORKS</a>
+                <a href="#section-footer" class="hud-nav-link hover-target" data-target="section-footer">CONNECT</a>
+            </nav>
+
+            <div class="hud-actions">
+                <button id="sfx-toggle" class="hud-action-btn hover-target" aria-label="Toggle SFX">
+                    <span class="btn-tag">SFX:</span> <span id="sfx-status" class="status-off">OFF</span>
+                </button>
+                <button class="hud-action-btn hover-target" onclick="openCmsModal()" title="System CMS Dashboard (Ctrl+Shift+A)">
+                    <span class="btn-tag">SYS</span> <span>⌘</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- INTRO OVERLAY SYSTEM INITIALIZATION -->
     <div id="intro-overlay">
         <div class="intro-content">
             <div class="intro-counter">000</div>
             <div class="intro-line"></div>
-            <div class="intro-text">SYSTEM INITIALIZATION</div>
+            <div class="intro-text">INITIALIZING</div>
         </div>
     </div>
 
+    <!-- DYNAMIC 3D CANVAS BACKGROUND -->
     <canvas id="dynamic-bg"></canvas>
 
+    <!-- NOISE OVERLAY & CUSTOM CURSOR -->
     <div class="noise"></div>
     <div class="cursor-dot"></div>
     <div class="cursor-circle"></div>
+    <div class="cursor-hud-coord" id="cursor-coord">[SYS.LOC // 000, 000]</div>
 
+    <!-- FLOATING PROJECT PREVIEW TOOLTIP (DESKTOP) -->
+    <div id="project-hover-preview" class="project-hover-preview" aria-hidden="true">
+        <div class="preview-inner">
+            <img id="preview-img" src="GatotACMobil.webp" alt="Project Preview">
+            <div class="preview-overlay">
+                <span id="preview-badge" class="preview-badge">LIVE SITE</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM SCROLLBAR (DESKTOP) -->
     <div class="custom-scrollbar-container">
         <div class="custom-scrollbar-track">
             <div class="custom-scrollbar-thumb" id="custom-thumb"></div>
@@ -33,150 +87,669 @@
         <div class="scroll-percent-float" id="scroll-float">0%</div>
     </div>
 
-    <div class="modal-overlay" id="modal">
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- PROJECT DETAIL MODAL -->
+    <div class="modal-overlay" id="modal" role="dialog" aria-modal="true" aria-labelledby="m-title">
         <div class="modal-header">
-            <div>DIANDRA_PROJECT_VIEW</div>
-            <div class="close-btn hover-target" onclick="closeModal()">CLOSE</div>
+            <div class="modal-status-pill">
+                <span class="pulse-dot"></span>
+                <span>PROJECT_SPECIFICATION_VIEW</span>
+            </div>
+            <button class="close-btn hover-target" onclick="closeModal()" aria-label="Close Modal">
+                <span>ESC</span> [ CLOSE ]
+            </button>
         </div>
         <div class="modal-body">
             <div class="modal-img-container">
-                <img id="m-img" class="modal-img" src="" alt="">
+                <div class="modal-img-frame">
+                    <img id="m-img" class="modal-img" src="GatotACMobil.webp" alt="Project Screenshot" loading="lazy">
+                </div>
             </div>
             <div class="modal-info">
-                <h2 id="m-title" class="modal-title">TITLE</h2>
-                <div id="m-stack" style="margin-bottom: 20px; font-family: monospace; color: var(--accent);">STACK</div>
-                <p id="m-desc" class="modal-desc">Description</p>
-                <a id="m-link" href="#" class="modal-btn hover-target">LAUNCH SITE</a>
+                <div class="modal-meta-row">
+                    <span id="m-num" class="modal-meta-num">01</span>
+                    <span id="m-cat" class="modal-meta-cat">Realtime / Backend</span>
+                </div>
+                <h2 id="m-title" class="modal-title">PROJECT TITLE</h2>
+                <div id="m-stack" class="modal-stack-tags"></div>
+                <p id="m-desc" class="modal-desc">Detailed project description goes here.</p>
+                <div class="modal-action-row">
+                    <a id="m-link" href="#" target="_blank" rel="noopener noreferrer" class="modal-btn modal-btn-primary hover-target">
+                        <span>LAUNCH SITE</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7.8H7.8"/></svg>
+                    </a>
+                    <a id="m-github" href="#" target="_blank" rel="noopener noreferrer" class="modal-btn modal-btn-secondary hover-target">
+                        <span>REPOSITORY</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="scroll-content" id="main-content">
+    <!-- CMS (CONTENT MANAGEMENT SYSTEM) MODAL -->
+    <div class="cms-overlay" id="cms-modal" role="dialog" aria-modal="true" aria-labelledby="cms-modal-title">
+        <div class="cms-window">
 
-        <section id="section-hero" style="min-height: 100vh;">
-            <span class="label reveal-up">/// Full Stack Engineer</span>
-            <h1 class="reveal-up" onclick="triggerScramble(this)">
-                <div class="scramble-wrapper" data-value="Diandra">Diandra</div>
+            <!-- LOCK SCREEN -->
+            <div class="cms-lockscreen" id="cms-lockscreen">
+                <div class="lock-card">
+                    <div class="lock-icon">🔒</div>
+                    <h3 class="lock-title">CMS ACCESS GATE</h3>
+                    <p class="lock-desc">Enter your administrative passcode to manage portfolio items, skills, and settings.</p>
+                    <form id="cms-login-form" onsubmit="handleCmsLogin(event)">
+                        <div class="input-group">
+                            <input type="password" id="cms-passcode-input" class="cyber-input" placeholder="Passcode (Default: admin123)" required autofocus autocomplete="current-password">
+                        </div>
+                        <div id="lock-error" class="lock-error"></div>
+                        <div class="lock-btn-row">
+                            <button type="submit" class="cyber-btn cyber-btn-accent hover-target">UNLOCK DASHBOARD</button>
+                            <button type="button" class="cyber-btn hover-target" onclick="closeCmsModal()">CANCEL</button>
+                        </div>
+                    </form>
+                    <div class="lock-hint">HINT: Default password is <code>admin123</code>. You can change it anytime in settings.</div>
+                </div>
+            </div>
+
+            <!-- DASHBOARD VIEW -->
+            <div class="cms-dashboard" id="cms-dashboard" style="display: none;">
+                <!-- CMS HEADER -->
+                <div class="cms-header">
+                    <div class="cms-title-wrap">
+                        <span class="cms-badge">CMS CONTROL PANEL</span>
+                        <h2 id="cms-modal-title">PORTFOLIO ENGINE</h2>
+                    </div>
+                    <div class="cms-header-actions">
+                        <span class="cms-data-badge" id="cms-item-count">3 PROJECTS ACTIVE</span>
+                        <button class="cms-close-btn hover-target" onclick="closeCmsModal()" title="Close CMS (Esc)">✕</button>
+                    </div>
+                </div>
+
+                <!-- CMS TABS -->
+                <div class="cms-tabs">
+                    <button class="cms-tab-btn active hover-target" onclick="switchCmsTab('projects', this)">📁 PROJECTS</button>
+                    <button class="cms-tab-btn hover-target" onclick="switchCmsTab('profile', this)">👤 PROFILE & HERO</button>
+                    <button class="cms-tab-btn hover-target" onclick="switchCmsTab('skills', this)">⚡ SKILLS</button>
+                    <button class="cms-tab-btn hover-target" onclick="switchCmsTab('socials', this)">🌐 SOCIAL LINKS</button>
+                    <button class="cms-tab-btn hover-target" onclick="switchCmsTab('backup', this)">💾 BACKUP & JSON</button>
+                </div>
+
+                <!-- CMS CONTENT PANELS -->
+                <div class="cms-body">
+
+                    <!-- TAB 1: PROJECTS -->
+                    <div class="cms-panel active" id="tab-projects">
+                        <div class="panel-header">
+                            <div>
+                                <h3>MANAGE PROJECTS</h3>
+                                <p class="panel-subtitle">Add, edit, or delete items shown in your Selected Works section.</p>
+                            </div>
+                            <button class="cyber-btn cyber-btn-accent hover-target" onclick="openProjectForm()">+ ADD NEW PROJECT</button>
+                        </div>
+
+                        <!-- PROJECT FORM (Add / Edit) -->
+                        <div class="cms-form-card" id="project-form-card" style="display: none;">
+                            <div class="form-header">
+                                <h4 id="project-form-mode">ADD NEW PROJECT</h4>
+                                <button type="button" class="form-close hover-target" onclick="closeProjectForm()">✕</button>
+                            </div>
+                            <form id="project-form" onsubmit="saveProject(event)">
+                                <input type="hidden" id="p-form-id">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="p-form-title">PROJECT TITLE *</label>
+                                        <input type="text" id="p-form-title" class="cyber-input" placeholder="e.g. NextGen Cloud Platform" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="p-form-subtitle">DISPLAY TITLE / SUBTITLE *</label>
+                                        <input type="text" id="p-form-subtitle" class="cyber-input" placeholder="e.g. Cloud Architecture" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="p-form-category">CATEGORY / TAG *</label>
+                                        <input type="text" id="p-form-category" class="cyber-input" placeholder="e.g. Realtime / Backend" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="p-form-stack">TECH STACK (comma-separated) *</label>
+                                        <input type="text" id="p-form-stack" class="cyber-input" placeholder="e.g. Next.js, Node.js, Redis, Docker" required>
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label for="p-form-desc">PROJECT DESCRIPTION *</label>
+                                        <textarea id="p-form-desc" class="cyber-textarea" rows="3" placeholder="Brief summary of the architecture, key technical achievements, and user impact." required></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="p-form-link">LIVE WEBSITE URL</label>
+                                        <input type="url" id="p-form-link" class="cyber-input" placeholder="https://example.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="p-form-github">GITHUB / REPO URL</label>
+                                        <input type="url" id="p-form-github" class="cyber-input" placeholder="https://github.com/...">
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label>PROJECT IMAGE (Auto WebP Compression) *</label>
+                                        <div class="image-uploader-grid">
+                                            <div class="upload-box hover-target" onclick="document.getElementById('p-form-file').click()">
+                                                <input type="file" id="p-form-file" accept="image/*" style="display: none;" onchange="handleImageFileUpload(event)">
+                                                <div class="upload-icon">📁</div>
+                                                <div class="upload-text">Upload from Device (Auto-converted to WebP)</div>
+                                            </div>
+                                            <div class="url-box">
+                                                <input type="text" id="p-form-img-url" class="cyber-input" placeholder="Or enter Image URL / filename (e.g. GatotACMobil.webp)" oninput="updateImagePreview(this.value)">
+                                                <div class="preset-pills">
+                                                    <span>Presets:</span>
+                                                    <button type="button" class="preset-pill hover-target" onclick="setImagePreset('GatotACMobil.webp')">GatotAC.webp</button>
+                                                    <button type="button" class="preset-pill hover-target" onclick="setImagePreset('AWA_NEWLOGO_DROPSHADOW.webp')">AWA.webp</button>
+                                                    <button type="button" class="preset-pill hover-target" onclick="setImagePreset('LOGOWITHSPARKS.webp')">FindUtopia.webp</button>
+                                                </div>
+                                            </div>
+                                            <div class="img-preview-box">
+                                                <img id="form-img-preview" src="GatotACMobil.webp" alt="Preview">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="cyber-btn cyber-btn-accent hover-target">SAVE PROJECT</button>
+                                    <button type="button" class="cyber-btn hover-target" onclick="closeProjectForm()">CANCEL</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- PROJECT LIST TABLE -->
+                        <div class="project-table-wrap">
+                            <div id="cms-project-list" class="cms-project-items">
+                                <!-- Populated dynamically by script.js -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: PROFILE & HERO -->
+                    <div class="cms-panel" id="tab-profile">
+                        <div class="panel-header">
+                            <div>
+                                <h3>PROFILE & BIOGRAPHY</h3>
+                                <p class="panel-subtitle">Edit personal details, bio narrative, and experience metrics.</p>
+                            </div>
+                        </div>
+                        <form id="profile-form" onsubmit="saveProfile(event)">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="prof-firstname">FIRST NAME</label>
+                                    <input type="text" id="prof-firstname" class="cyber-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="prof-lastname">LAST NAME</label>
+                                    <input type="text" id="prof-lastname" class="cyber-input" required>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="prof-role">PRIMARY ROLE / SUBTITLE</label>
+                                    <input type="text" id="prof-role" class="cyber-input" required>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="prof-lead">HERO LEAD STATEMENT</label>
+                                    <textarea id="prof-lead" class="cyber-textarea" rows="3" required></textarea>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="prof-bio">ABOUT / ARCHITECT BIO (Supports HTML formatting like &lt;strong&gt; and &lt;br&gt;)</label>
+                                    <textarea id="prof-bio" class="cyber-textarea" rows="5" required></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="prof-stat-years">YEARS OF EXPERIENCE</label>
+                                    <input type="number" id="prof-stat-years" class="cyber-input" min="0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="prof-stat-projects">PROJECTS DEPLOYED</label>
+                                    <input type="number" id="prof-stat-projects" class="cyber-input" min="0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="prof-stat-commitment">COMMITMENT PERCENTAGE (%)</label>
+                                    <input type="number" id="prof-stat-commitment" class="cyber-input" min="0" max="100" required>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="cyber-btn cyber-btn-accent hover-target">SAVE PROFILE CHANGES</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- TAB 3: SKILLS -->
+                    <div class="cms-panel" id="tab-skills">
+                        <div class="panel-header">
+                            <div>
+                                <h3>CORE COMPETENCIES & TECH STACK</h3>
+                                <p class="panel-subtitle">Manage skill marquee tracks and interactive competency matrices.</p>
+                            </div>
+                        </div>
+                        <form id="skills-form" onsubmit="saveSkills(event)">
+                            <div class="form-group full-width">
+                                <label for="skills-track-1">MARQUEE ROW 1 (Frontend / Tools - Comma-separated)</label>
+                                <textarea id="skills-track-1" class="cyber-textarea" rows="3" required></textarea>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="skills-track-2">MARQUEE ROW 2 (Backend / Database - Comma-separated)</label>
+                                <textarea id="skills-track-2" class="cyber-textarea" rows="3" required></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="cyber-btn cyber-btn-accent hover-target">UPDATE SKILLS TRACK</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- TAB 4: SOCIALS -->
+                    <div class="cms-panel" id="tab-socials">
+                        <div class="panel-header">
+                            <div>
+                                <h3>CONNECTIVITY & SOCIAL HANDLES</h3>
+                                <p class="panel-subtitle">Configure your social channels and contact email.</p>
+                            </div>
+                        </div>
+                        <form id="socials-form" onsubmit="saveSocials(event)">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="soc-github">GITHUB URL</label>
+                                    <input type="url" id="soc-github" class="cyber-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="soc-linkedin">LINKEDIN URL</label>
+                                    <input type="url" id="soc-linkedin" class="cyber-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="soc-instagram">INSTAGRAM URL</label>
+                                    <input type="url" id="soc-instagram" class="cyber-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="soc-email">CONTACT EMAIL</label>
+                                    <input type="email" id="soc-email" class="cyber-input" required>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="cyber-btn cyber-btn-accent hover-target">SAVE SOCIAL LINKS</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- TAB 5: BACKUP & SETTINGS -->
+                    <div class="cms-panel" id="tab-backup">
+                        <div class="panel-header">
+                            <div>
+                                <h3>BACKUP, EXPORT & SETTINGS</h3>
+                                <p class="panel-subtitle">Export data as JSON to sync across machines, restore backups, or change passcode.</p>
+                            </div>
+                        </div>
+                        <div class="backup-grid">
+                            <div class="backup-card">
+                                <h4>💾 EXPORT PORTFOLIO JSON</h4>
+                                <p>Download your complete portfolio data as a JSON file to keep safe or commit to your repo.</p>
+                                <button type="button" class="cyber-btn cyber-btn-accent hover-target" onclick="exportDataJson()">DOWNLOAD DATA.JSON</button>
+                            </div>
+                            <div class="backup-card">
+                                <h4>📥 IMPORT PORTFOLIO JSON</h4>
+                                <p>Load portfolio data from an exported JSON file.</p>
+                                <input type="file" id="import-json-file" accept=".json" style="display: none;" onchange="importDataJson(event)">
+                                <button type="button" class="cyber-btn hover-target" onclick="document.getElementById('import-json-file').click()">SELECT JSON FILE</button>
+                            </div>
+                            <div class="backup-card">
+                                <h4>🔑 CHANGE CMS PASSCODE</h4>
+                                <form id="passcode-change-form" onsubmit="changePasscode(event)">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <input type="password" id="new-passcode-input" class="cyber-input" placeholder="New Passcode" required>
+                                    </div>
+                                    <button type="submit" class="cyber-btn hover-target">UPDATE PASSCODE</button>
+                                </form>
+                            </div>
+                            <div class="backup-card danger-zone">
+                                <h4>⚠️ RESET TO DEFAULT DATA</h4>
+                                <p>Restore original Chyas? portfolio setup (all changes will be reset).</p>
+                                <button type="button" class="cyber-btn cyber-btn-danger hover-target" onclick="confirmResetDefaults()">RESET TO DEFAULTS</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MAIN SCROLL CONTENT CONTAINER -->
+    <main class="scroll-content" id="main-content">
+
+        <!-- 01. HERO SECTION -->
+        <section id="section-hero" class="hero-section">
+            <div class="hero-eyebrow reveal-up">
+                <span class="terminal-prompt">&gt;</span>
+                <span id="hero-label">Creative Technologist &amp; Kinetic System Architect</span>
+                <span class="hero-badge">JAKARTA, ID / UTC+7</span>
+            </div>
+
+            <h1 class="reveal-up hero-name-title" id="hero-title-interactive" title="Interact / Hover / Click to Scramble">
+                <div class="scramble-wrapper" id="hero-firstname" data-value="Chyas?">
+                    <span class="hero-char" data-char="C">C</span><span class="hero-char" data-char="h">h</span><span class="hero-char" data-char="y">y</span><span class="hero-char" data-char="a">a</span><span class="hero-char" data-char="s">s</span><span class="hero-char char-mystery" data-char="?">?</span>
+                </div>
                 <span>
-                    <div class="scramble-wrapper" data-value="Cahya">Cahya</div>
+                    <div class="scramble-wrapper" id="hero-lastname" data-value=""></div>
                 </span>
             </h1>
-            <p class="lead reveal-up">
-                Crafting scalable digital ecosystems. Specializing in high-performance backend architecture and
-                immersive frontend experiences.
+
+            <p class="lead reveal-up" id="hero-lead">
+                Exploring the tension between deterministic backend engines and sensory web kinetics. Architecting high-throughput distributed architectures, custom canvas simulations, and sub-pixel micro-interactions.
             </p>
+
+            <div class="hero-action-row reveal-up">
+                <a href="#section-projects" class="cyber-btn cyber-btn-accent hover-target magnetic-btn">
+                    <span>Index Archives ↘</span>
+                </a>
+                <a href="#section-experience" class="cyber-btn hover-target magnetic-btn">
+                    <span>Chronicle ↘</span>
+                </a>
+                <a href="#section-footer" class="cyber-btn hover-target magnetic-btn">
+                    <span>Transmit Signal ↗</span>
+                </a>
+            </div>
         </section>
 
-        <section id="section-architect" class="reveal-up" style="position: relative;">
-            <div class="blueprint-grid"></div>
-            <div class="architect-mouse-spotlight"></div>
-            <div class="section-scanner"></div>
+        <!-- 02. ARCHITECT (ABOUT & PHILOSOPHY) SECTION -->
+        <section id="section-architect" class="reveal-up">
+            <div class="section-header-row">
+                <span class="section-label">01 / About</span>
+                <div class="section-line"></div>
+            </div>
 
-            <span class="label">/// The_Architect</span>
             <div class="about-grid">
                 <div class="about-bio" id="interactive-bio">
-                    <p class="raw-text">I don't just write code; I build <strong>systems that
-                            breathe</strong>.<br><br>My philosophy is simple: complexity should be handled by the
-                        machine, not the user. I bridge the gap between heavy backend logic and fluid frontend
-                        interactions.<br><br>Currently obsessed with <strong>Micro-interactions</strong> and
-                        <strong>System Scalability</strong>.
+                    <p class="raw-text" id="bio-content-text">
+                        I explore the collision of <strong>cold computation</strong> and <strong>poetic interaction</strong>.<br><br>
+                        Beyond standard product engineering, I design bespoke digital instruments: distributed systems engineered for unyielding determinism, paired with micro-sensory kinetic frontends that respond organically to touch and motion.<br><br>
+                        Active research: <strong>Sub-Pixel Kinetic Physics</strong>, <strong>Distributed Event Streams</strong>, and <strong>Esoteric UI Protocols</strong>.
                     </p>
                 </div>
+
                 <div class="about-stats">
                     <div class="stat-row">
-                        <span class="stat-val"><span class="count-up" data-target="03">0</span>+</span>
-                        <span class="stat-key">Years Experience</span>
+                        <span class="stat-val">&lt;<span class="count-up" id="stat-years" data-target="16">0</span>ms</span>
+                        <span class="stat-key">Frame Budget</span>
                     </div>
                     <div class="stat-row">
-                        <span class="stat-val"><span class="count-up" data-target="4">0</span>+</span>
-                        <span class="stat-key">Projects Deployed</span>
+                        <span class="stat-val"><span class="count-up" id="stat-projects" data-target="4">0</span>+</span>
+                        <span class="stat-key">Engines Shipped</span>
                     </div>
                     <div class="stat-row">
-                        <span class="stat-val"><span class="count-up" data-target="100">0</span>%</span>
-                        <span class="stat-key">Commitment</span>
+                        <span class="stat-val"><span class="count-up" id="stat-commitment" data-target="99">0</span>.9%</span>
+                        <span class="stat-key">System Integrity</span>
                     </div>
+                </div>
+            </div>
+
+            <!-- ARCHITECTURAL FOUNDATIONS & PHILOSOPHY -->
+            <div class="philosophy-grid" id="section-philosophy">
+                <div class="philosophy-card hover-target">
+                    <span class="p-card-num">01 // DETERMINISM</span>
+                    <h3 class="p-card-title">Zero-Jank State Engines</h3>
+                    <p class="p-card-desc">Architecting deterministic state machines, Redis event pub/sub, and low-latency APIs designed for 99.9% uptime and zero unpredictable mutations.</p>
+                </div>
+                <div class="philosophy-card hover-target">
+                    <span class="p-card-num">02 // SENSORY KINETICS</span>
+                    <h3 class="p-card-title">Sub-Pixel Physics</h3>
+                    <p class="p-card-desc">Translating rigid computational mechanics into 60fps spring vectors, tactile audio frequencies, and organic canvas simulations without UI bloat.</p>
+                </div>
+                <div class="philosophy-card hover-target">
+                    <span class="p-card-num">03 // ESOTERIC CRAFT</span>
+                    <h3 class="p-card-title">Defiant Minimalism</h3>
+                    <p class="p-card-desc">Stripping away corporate web tropes, generic templates, and decorative baggage to deliver razor-sharp, purpose-built digital instruments.</p>
                 </div>
             </div>
         </section>
 
-        <section id="section-skills">
-            <span class="label reveal-up">/// Core_Competencies</span>
-            <div class="marquee-wrapper reveal-up">
+        <!-- 03. CORE COMPETENCIES (SKILLS & STACK) SECTION -->
+        <section id="section-skills" class="reveal-up">
+            <div class="section-header-row">
+                <span class="section-label">02 / Skills &amp; Architecture Stack</span>
+                <div class="section-line"></div>
+            </div>
+
+            <!-- KINETIC MARQUEE RUNNERS -->
+            <div class="marquee-wrapper">
                 <div class="marquee-row">
-                    <div class="marquee-track">
-                        <div class="marquee-item hover-target">REACT</div>
-                        <div class="marquee-item hover-target"><span>///</span>LIVEWIRE</div>
-                        <div class="marquee-item hover-target"><span>///</span>ANIME.JS</div>
-                        <div class="marquee-item hover-target"><span>///</span>TAILWIND</div>
-                        <div class="marquee-item hover-target"><span>///</span>THREE.JS</div>
-                        <div class="marquee-item hover-target">REACT</div>
-                        <div class="marquee-item hover-target"><span>///</span>LIVEWIRE</div>
-                        <div class="marquee-item hover-target"><span>///</span>ANIME.JS</div>
-                        <div class="marquee-item hover-target"><span>///</span>TAILWIND</div>
-                        <div class="marquee-item hover-target"><span>///</span>THREE.JS</div>
+                    <div class="marquee-track" id="marquee-track-1">
+                        <!-- Populated by script.js -->
                     </div>
                 </div>
                 <div class="marquee-row reverse">
-                    <div class="marquee-track">
-                        <div class="marquee-item hover-target">NODE.JS</div>
-                        <div class="marquee-item hover-target"><span>///</span>LARAVEL</div>
-                        <div class="marquee-item hover-target"><span>///</span>MYSQL</div>
-                        <div class="marquee-item hover-target"><span>///</span>EXPRESS</div>
-                        <div class="marquee-item hover-target"><span>///</span>PHP</div>
-                        <div class="marquee-item hover-target">NODE.JS</div>
-                        <div class="marquee-item hover-target"><span>///</span>LARAVEL</div>
-                        <div class="marquee-item hover-target"><span>///</span>MYSQL</div>
-                        <div class="marquee-item hover-target"><span>///</span>EXPRESS</div>
-                        <div class="marquee-item hover-target"><span>///</span>PHP</div>
+                    <div class="marquee-track" id="marquee-track-2">
+                        <!-- Populated by script.js -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ARCHITECTURAL COMPETENCY MATRIX -->
+            <div class="stack-matrix-grid" id="stack-matrix-container">
+                <div class="stack-category-card hover-target">
+                    <div class="cat-header">
+                        <span class="cat-title">Backend Architecture</span>
+                        <span class="cat-badge">Core Engine</span>
+                    </div>
+                    <div class="stack-tag-list">
+                        <span class="matrix-tag">Laravel</span>
+                        <span class="matrix-tag">Node.js</span>
+                        <span class="matrix-tag">Express</span>
+                        <span class="matrix-tag">PHP</span>
+                        <span class="matrix-tag">RESTful APIs</span>
+                        <span class="matrix-tag">WebSocket</span>
+                        <span class="matrix-tag">Microservices</span>
+                    </div>
+                </div>
+
+                <div class="stack-category-card hover-target">
+                    <div class="cat-header">
+                        <span class="cat-title">Data &amp; Persistence</span>
+                        <span class="cat-badge">High Throughput</span>
+                    </div>
+                    <div class="stack-tag-list">
+                        <span class="matrix-tag">MySQL</span>
+                        <span class="matrix-tag">PostgreSQL</span>
+                        <span class="matrix-tag">Redis Cache</span>
+                        <span class="matrix-tag">Pub / Sub</span>
+                        <span class="matrix-tag">Query Optimization</span>
+                        <span class="matrix-tag">Schema Design</span>
+                    </div>
+                </div>
+
+                <div class="stack-category-card hover-target">
+                    <div class="cat-header">
+                        <span class="cat-title">Frontend &amp; Interaction</span>
+                        <span class="cat-badge">Kinetic UI</span>
+                    </div>
+                    <div class="stack-tag-list">
+                        <span class="matrix-tag">React</span>
+                        <span class="matrix-tag">Next.js</span>
+                        <span class="matrix-tag">Livewire</span>
+                        <span class="matrix-tag">Anime.js</span>
+                        <span class="matrix-tag">TypeScript</span>
+                        <span class="matrix-tag">Tailwind CSS</span>
+                        <span class="matrix-tag">Responsive Systems</span>
+                    </div>
+                </div>
+
+                <div class="stack-category-card hover-target">
+                    <div class="cat-header">
+                        <span class="cat-title">DevOps &amp; Runtime</span>
+                        <span class="cat-badge">Infrastructure</span>
+                    </div>
+                    <div class="stack-tag-list">
+                        <span class="matrix-tag">Docker</span>
+                        <span class="matrix-tag">Linux VPS</span>
+                        <span class="matrix-tag">Nginx</span>
+                        <span class="matrix-tag">Git Versioning</span>
+                        <span class="matrix-tag">CI / CD</span>
+                        <span class="matrix-tag">WebP Optimization</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="section-projects">
-            <span class="label reveal-up">/// Selected_Works</span>
-            <div class="project-list">
-                <a class="project-item hover-target reveal-up" href="#" onclick="openModal(this, event)"
-                    data-title="Gatot AC Mobil"
-                    data-desc="A car air conditioning service booking website equipped with a real-time system and live chat feature."
-                    data-stack="Laravel / Livewire / MySQL" data-img="https://gatotac.web.id/img/hero.png"
-                    data-link="https://gatotac.web.id/">
-                    <div><span class="p-num">01</span><span class="p-title">Booking Service</span></div><span
-                        class="p-cat">Realtime / Backend</span>
-                </a>
-                <a class="project-item hover-target reveal-up" href="#" onclick="openModal(this, event)"
-                    data-title="AWA"
-                    data-desc="An interactive and dynamic company profile website designed to showcase the company’s identity."
-                    data-stack="Express / React" data-img="https://awa.my.id/AWA_NEWLOGO_DROPSHADOW.png"
-                    data-link="https://awa.my.id/">
-                    <div><span class="p-num">02</span><span class="p-title">AWA</span></div><span
-                        class="p-cat">Interaction / Frontend</span>
-                </a>
-                <a class="project-item hover-target reveal-up" href="#" onclick="openModal(this, event)"
-                    data-title="Find Utopia"
-                    data-desc="A website with a cool and dynamic design inspired by a file manager interface."
-                    data-stack="Express / React" data-img="https://findutopia.my.id/LOGOWITHSPARKS.png"
-                    data-link="https://findutopia.my.id/">
-                    <div><span class="p-num">03</span><span class="p-title">Find Utopia</span></div><span
-                        class="p-cat">Design System / Dynamic</span>
-                </a>
+        <!-- 04. CAREER MILESTONES & EXPERIENCE SECTION -->
+        <section id="section-experience" class="reveal-up">
+            <div class="section-header-row">
+                <span class="section-label">03 / Experience &amp; Milestones</span>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="timeline-container">
+                <!-- ITEM 1 -->
+                <div class="timeline-item hover-target">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-header">
+                        <h3 class="timeline-role">Kinetic System Architect &amp; Research Engineer</h3>
+                        <span class="timeline-period">2024 — PRESENT</span>
+                    </div>
+                    <div class="timeline-company">Bespoke Digital Lab &amp; Atelier // Jakarta &amp; Remote</div>
+                    <ul class="timeline-points">
+                        <li>Architecting high-throughput state synchronization engines, multi-tenant schemas, and real-time WebSocket pipelines.</li>
+                        <li>Implementing Redis caching hierarchies and query index optimizations, compressing latencies by over 40%.</li>
+                        <li>Crafting bespoke tactile interfaces bridging sub-pixel spring physics with decoupled backend services.</li>
+                    </ul>
+                    <div class="timeline-tech-tags">
+                        <span>Laravel</span>
+                        <span>Node.js</span>
+                        <span>MySQL</span>
+                        <span>Redis</span>
+                        <span>Docker</span>
+                        <span>Anime.js</span>
+                    </div>
+                </div>
+
+                <!-- ITEM 2 -->
+                <div class="timeline-item hover-target">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-header">
+                        <h3 class="timeline-role">Full Stack Systems Engineer</h3>
+                        <span class="timeline-period">2023 — 2024</span>
+                    </div>
+                    <div class="timeline-company">Autonomous Web Applications &amp; High-Load Systems</div>
+                    <ul class="timeline-points">
+                        <li>Engineered Gatot AC Mobil reservation platform featuring instant real-time slot scheduling and automated customer routing.</li>
+                        <li>Developed the AWA brand platform with fluid responsive motion and optimal WebP asset compression workflows.</li>
+                        <li>Maintained CI/CD pipelines, container orchestration, and high-security Linux server deployments.</li>
+                    </ul>
+                    <div class="timeline-tech-tags">
+                        <span>Laravel</span>
+                        <span>Livewire</span>
+                        <span>Express</span>
+                        <span>React</span>
+                        <span>MySQL</span>
+                    </div>
+                </div>
+
+                <!-- ITEM 3 -->
+                <div class="timeline-item hover-target">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-header">
+                        <h3 class="timeline-role">Creative Technologist &amp; Interaction Specialist</h3>
+                        <span class="timeline-period">2022 — 2023</span>
+                    </div>
+                    <div class="timeline-company">Experimental Interface Labs &amp; Kinetic Experiences</div>
+                    <ul class="timeline-points">
+                        <li>Crafted Find Utopia digital experience inspired by speculative OS navigation, particle dynamics, and custom physics.</li>
+                        <li>Engineered reusable modular Anime.js choreography libraries and custom HTML5 canvas shaders.</li>
+                    </ul>
+                    <div class="timeline-tech-tags">
+                        <span>JavaScript</span>
+                        <span>React</span>
+                        <span>Anime.js</span>
+                        <span>HTML5 Canvas</span>
+                        <span>CSS Architecture</span>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section id="section-footer" style="min-height: 50vh;">
-            <span class="label reveal-up">/// Connect</span>
-            <h1 class="reveal-up footer-title">
-                Let's Build <br> Something Great
-            </h1>
-            <div class="social-row reveal-up">
-                <a href="https://github.com/DiandraCahya" target="_blank" class="social-link magnetic-btn">Github</a>
-                <a href="https://linkedin.com" target="_blank" class="social-link magnetic-btn">LinkedIn</a>
-                <a href="https://instagram.com" target="_blank" class="social-link magnetic-btn">Instagram</a>
-                <a href="mailto:hello@diandra.dev" class="social-link magnetic-btn">Email</a>
+        <!-- 05. SELECTED WORKS (PROJECTS) SECTION -->
+        <section id="section-projects" class="reveal-up">
+            <div class="section-header-row">
+                <span class="section-label">04 / Selected Works</span>
+                <div class="section-line"></div>
+            </div>
+
+            <!-- CATEGORY FILTER BAR -->
+            <div class="project-filter-bar">
+                <button class="filter-pill active hover-target" onclick="filterProjectsByCategory('ALL', this)">ALL ARCHIVES</button>
+                <button class="filter-pill hover-target" onclick="filterProjectsByCategory('Backend', this)">BACKEND &amp; REALTIME</button>
+                <button class="filter-pill hover-target" onclick="filterProjectsByCategory('Frontend', this)">KINETIC &amp; UI</button>
+                <button class="filter-pill hover-target" onclick="filterProjectsByCategory('Design', this)">EXPERIMENTAL SYSTEMS</button>
+            </div>
+
+            <!-- DYNAMIC PROJECT LIST CONTAINER -->
+            <div class="project-list" id="project-list-container">
+                <!-- Populated dynamically from PortfolioStore -->
             </div>
         </section>
 
-    </div>
+        <!-- 06. FOOTER & CONNECT SECTION -->
+        <section id="section-footer" class="footer-section">
+            <div class="section-header-row">
+                <span class="section-label">05 / Contact &amp; Dispatch</span>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="footer-content">
+                <div class="footer-split-grid">
+                    <!-- LEFT COLUMN -->
+                    <div class="footer-left reveal-up">
+                        <h2 class="footer-title">
+                            Initiate <br> Resonance.
+                        </h2>
+
+                        <div class="location-tag">
+                            <span class="hud-status-dot pulse-dot"></span>
+                            <span>ATELIER: JAKARTA, ID // 106.8456° E, 6.2088° S</span>
+                        </div>
+
+                        <div class="email-minimal-wrap">
+                            <a id="footer-email-display" href="mailto:hello@chyas.dev" class="minimal-email-link hover-target" onclick="copyEmailToClipboard(event)">hello@chyas.dev ↗</a>
+                        </div>
+
+                        <div class="social-row" id="social-links-row">
+                            <a href="https://github.com/chyas" target="_blank" rel="noopener noreferrer" class="social-link hover-target" id="soc-link-github">Github ↗</a>
+                            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" class="social-link hover-target" id="soc-link-linkedin">LinkedIn ↗</a>
+                            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="social-link hover-target" id="soc-link-instagram">Instagram ↗</a>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: MINIMALIST DIRECT CONTACT FORM -->
+                    <div class="footer-right reveal-up">
+                        <form class="contact-form-minimal" id="quick-contact-form" onsubmit="handleQuickContact(event)">
+                            <div class="contact-form-header">
+                                <div class="contact-form-title">// DIRECT INQUIRY DISPATCH</div>
+                                <div class="contact-form-subtitle">Have a project or system architecture challenge? Send a quick transmission.</div>
+                            </div>
+
+                            <div class="contact-field-group">
+                                <input type="text" id="contact-name" class="contact-line-input" placeholder="YOUR NAME / COMPANY *" required autocomplete="name">
+                                <input type="email" id="contact-email" class="contact-line-input" placeholder="YOUR EMAIL ADDRESS *" required autocomplete="email">
+                                <input type="text" id="contact-subject" class="contact-line-input" placeholder="SCOPE (e.g. Full Stack System / Microservices)">
+                                <textarea id="contact-message" class="contact-line-input contact-line-textarea" rows="3" placeholder="PROJECT DETAILS / TIMELINE *" required></textarea>
+                            </div>
+
+                            <button type="submit" class="cyber-btn cyber-btn-accent magnetic-btn hover-target" style="width: 100%; justify-content: center;">
+                                <span>DISPATCH TRANSMISSION [↗]</span>
+                            </button>
+                            <div class="form-status-note">SECURE DIRECT TRANSMISSION • 24H RESPONSE COMMITMENT</div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="footer-bottom-bar reveal-up">
+                    <div class="footer-copyright">
+                        <span class="secret-trigger-target hover-target" onclick="handleSecretTrigger(event)" title="Chyas? Engine" style="cursor: default;">© <span id="current-year">2026</span> Chyas<span class="footer-mystery-glyph">?</span></span>
+                    </div>
+                    <div class="footer-actions">
+                        <button class="back-to-top-btn hover-target" onclick="scrollToTop()" title="Scroll to top">Top ↑</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
 
     <script src="script.js"></script>
 </body>
