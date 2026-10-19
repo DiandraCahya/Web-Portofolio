@@ -76,7 +76,7 @@ const DEFAULT_PORTFOLIO_DATA = {
         email: "hello@chyas.dev"
     },
     settings: {
-        passcode: "admin123"
+        passcode: "chya1524"
     }
 };
 
@@ -91,7 +91,16 @@ class PortfolioStore {
             const raw = localStorage.getItem(this.STORAGE_KEY);
             if (raw) {
                 const parsed = JSON.parse(raw);
-                return { ...DEFAULT_PORTFOLIO_DATA, ...parsed };
+                // Automatically migrate old default password to chya1524
+                if (parsed.settings && (!parsed.settings.passcode || parsed.settings.passcode === 'admin123')) {
+                    parsed.settings.passcode = 'chya1524';
+                }
+                const merged = { ...DEFAULT_PORTFOLIO_DATA, ...parsed };
+                if (!merged.settings) merged.settings = {};
+                if (!merged.settings.passcode || merged.settings.passcode === 'admin123') {
+                    merged.settings.passcode = 'chya1524';
+                }
+                return merged;
             }
         } catch (e) {
             console.warn('Storage read error, using defaults', e);
@@ -258,11 +267,18 @@ function showToast(message, duration = 3000) {
 }
 
 // ==========================================================================
-// 4. RESTORED 3D SCROLL ANIMATION PARTICLE ENGINE (SPHERE -> TERRAIN -> HELIX -> NETWORK -> WARP)
-// ULTRA-OPTIMIZED FOR MAXIMUM FPS & ZERO-JANK SMOOTHNESS
+// 4. 3D SCROLL PARTICLE ENGINE (SPHERE -> TERRAIN -> HELIX -> NETWORK -> WARP)
+// Monochrome, black background, zero-color. Didesain ulang untuk biaya render
+// seminimal mungkin: frame cap 60fps, tanpa alokasi per frame, dan deteksi
+// otomatis perangkat lemah.
 // ==========================================================================
 const canvas = document.getElementById('dynamic-bg');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { alpha: false });
+
+const REDUCED_MOTION = (() => {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    catch (e) { return false; }
+})();
 
 let width = window.innerWidth;
 let height = window.innerHeight;
@@ -273,9 +289,57 @@ let cursorCircleX = -1000, cursorCircleY = -1000;
 let coordCounter = 0;
 let scaleFactor = 1;
 let isMobile = width < 768;
-let numParticles = isMobile ? 180 : 600;
+let isTablet = false;
+let isTouch = false;
+try {
+    isTouch = !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+} catch (e) { isTouch = false; }
+
+let numParticles = 0;
 const particles = [];
 
+// --------------------------------------------------------------------------
+// ADAPTIVE QUALITY
+// Level 0 = penuh, 3 = paling ringan. Turun otomatis kalau frame drop.
+// --------------------------------------------------------------------------
+const QUALITY = {
+    level: 0,
+    strands: 18,
+    samples: 44,
+    glow: true,
+    weave: true,
+    head: true
+};
+
+function getDeviceBudget() {
+    const w = window.innerWidth;
+    if (w < 700) return { particles: 90, strands: 10, samples: 28, weave: false };
+    if (w < 1180 || isTouch) return { particles: 150, strands: 13, samples: 34, weave: false };
+    return { particles: 220, strands: 18, samples: 44, weave: true };
+}
+
+function applyQuality() {
+    const b = getDeviceBudget();
+    const lvl = QUALITY.level;
+
+    QUALITY.strands = lvl >= 2 ? Math.max(7, Math.round(b.strands * 0.65)) : b.strands;
+    QUALITY.samples = lvl >= 2 ? Math.max(20, Math.round(b.samples * 0.7)) : b.samples;
+    QUALITY.glow = lvl < 2;
+    QUALITY.weave = b.weave && lvl < 1;
+    QUALITY.head = lvl < 2;
+
+    if (REDUCED_MOTION) {
+        QUALITY.strands = Math.max(7, Math.round(b.strands * 0.6));
+        QUALITY.samples = Math.max(18, Math.round(b.samples * 0.6));
+        QUALITY.glow = false;
+        QUALITY.weave = false;
+        QUALITY.head = false;
+    }
+}
+
+// Scratch buffer titik ribbon — dipakai ulang, nol alokasi per frame
+const ribbonBufX = new Float32Array(96);
+const ribbonBufY = new Float32Array(96);
 
 let targetScrollPercent = 0;
 let scrollPercent = 0;
@@ -316,172 +380,407 @@ function initNoiseOverlay() {
     } catch (e) {}
 }
 
-function spawnShockwave(x, y) {
-    // Disabled
-}
-
-// Pre-rendered high-performance circular particle sprites (zero CPU arc tessellation)
+// Sprite glow pre-render (hindari arc/gradient per partikel)
 let whiteSprite = null;
-let redSprite = null;
 
 function createParticleSprites() {
-    if (whiteSprite && redSprite) return;
-    const spriteSize = 32;
-    const center = spriteSize / 2;
+    if (whiteSprite) return;
+    const S = 64;
+    const c = S / 2;
 
-    whiteSprite = document.createElement('canvas');
-    whiteSprite.width = spriteSize;
-    whiteSprite.height = spriteSize;
-    const wCtx = whiteSprite.getContext('2d');
-    wCtx.beginPath();
-    wCtx.arc(center, center, center - 1, 0, 6.2831853);
-    wCtx.fillStyle = '#ffffff';
-    wCtx.fill();
-
-    redSprite = document.createElement('canvas');
-    redSprite.width = spriteSize;
-    redSprite.height = spriteSize;
-    const rCtx = redSprite.getContext('2d');
-    rCtx.beginPath();
-    rCtx.arc(center, center, center - 1, 0, 6.2831853);
-    rCtx.fillStyle = '#eb4d4b';
-    rCtx.fill();
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = S;
+    const cx = cv.getContext('2d');
+    const grad = cx.createRadialGradient(c, c, 0, c, c, c);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.5)');
+    grad.addColorStop(0.65, 'rgba(255, 255, 255, 0.12)');
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    cx.fillStyle = grad;
+    cx.fillRect(0, 0, S, S);
+    whiteSprite = cv;
 }
 createParticleSprites();
 
-function initParticles() {
-    particles.length = 0;
+function initParticles(preserve) {
     isMobile = window.innerWidth < 768;
-    numParticles = isMobile ? 140 : 360;
+    isTablet = !isMobile && window.innerWidth < 1180;
 
-    for (let i = 0; i < numParticles; i++) {
-        const ratio = i / numParticles;
+    const b = getDeviceBudget();
+    const qFactor = QUALITY.level >= 2 ? 0.6 : 1;
+    const target = Math.max(50, Math.round(b.particles * qFactor));
+
+    const keep = (preserve && particles.length) ? Math.min(particles.length, target) : 0;
+    particles.length = keep;
+    numParticles = target;
+
+    for (let i = keep; i < target; i++) {
+        const ratio = i / target;
         const phi = Math.acos(Math.max(-1, Math.min(1, 2 * ratio - 1)));
-        const offset = Math.random() * Math.PI * 2;
+        const spiralPhi = Math.acos(Math.max(-1, Math.min(1, 1 - 2 * ratio)));
+        const spiralTheta = ratio * Math.PI * 2 * 9;
+        const spiralR = 0.35 + 0.65 * ((i * 0.61803398875) % 1);
+
         particles.push({
             x: (Math.random() - 0.5) * window.innerWidth,
             y: (Math.random() - 0.5) * window.innerHeight,
             z: (Math.random() - 0.5) * 1000,
-            tx: 0,
-            ty: 0,
-            tz: 0,
-            offset: offset,
-            speed: Math.random() * 0.05 + 0.01,
-            // Precomputed static parameters to eliminate redundant trig in animation loop
-            ratio: ratio,
             sinPhi: Math.sin(phi),
             cosPhi: Math.cos(phi),
-            sphereThetaBase: ratio * Math.PI * 2 * 20,
+            sphereThetaBase: ratio * Math.PI * 2 * 4,
             helixThetaBase: ratio * Math.PI * 2 * 5,
             helixYRatio: (ratio - 0.5) * 1.5,
             helixInvert: (i % 2 === 0),
-            netX: Math.cos(offset),
-            netY: Math.sin(offset * 2) * 0.6,
-            netZ: Math.sin(offset * 3),
-            // Deterministic static positions for warp (prevents random jitter & coordinate pollution)
-            warpX: (Math.random() - 0.5) * 2,
-            warpY: (Math.random() - 0.5) * 2,
+            netX: Math.sin(spiralPhi) * Math.cos(spiralTheta),
+            netY: Math.cos(spiralPhi),
+            netZ: Math.sin(spiralPhi) * Math.sin(spiralTheta),
+            warpX: Math.sin(spiralPhi) * Math.cos(spiralTheta) * spiralR,
+            warpY: Math.cos(spiralPhi) * spiralR,
             warpSpeed: Math.random() * 25 + 15,
-            warpOffset: Math.random() * 2000
+            warpOffset: (ratio * 2000 + Math.random() * 60) % 2000,
+            visible: false,
+            sx: 0, sy: 0, scale: 0, size: 1, alpha: 0
         });
     }
 }
 
+let dpr = 1;
 function resizeCanvas() {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
+    // Canvas full-screen digambar ulang tiap frame → DPR 2 berarti 4x piksel.
+    // Selain membatasi DPR, total piksel juga dibatasi (pixel budget) supaya
+    // monitor 4K tidak membuat fill-rate meledak.
+    const rawDpr = window.devicePixelRatio || 1;
+    const small = window.innerWidth < 1180 || isTouch;
+    let cap = Math.min(rawDpr, small ? 1.5 : 1.75);
+
+    const MAX_PIXELS = 4_500_000; // batas total piksel canvas (anti-lag di layar 4K)
+    const cssPixels = window.innerWidth * window.innerHeight;
+    if (cssPixels * cap * cap > MAX_PIXELS) {
+        cap = Math.max(1, Math.sqrt(MAX_PIXELS / cssPixels));
+    }
+    dpr = cap;
+
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
     isMobile = width < 768;
+    isTablet = !isMobile && width < 1180;
     scaleFactor = Math.min(width, height) / 800;
+
+    applyQuality();
     initParticles();
     cacheSectionOffsets();
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#050505';
+    ctx.fillRect(0, 0, width, height);
 }
-window.addEventListener('resize', resizeCanvas, { passive: true });
+
+let resizeRaf = 0;
+window.addEventListener('resize', () => {
+    if (resizeRaf) return;
+    resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = 0;
+        resizeCanvas();
+    });
+}, { passive: true });
+window.addEventListener('orientationchange', () => {
+    setTimeout(resizeCanvas, 180);
+}, { passive: true });
 resizeCanvas();
 
-// High-performance 3D Formulas with precomputed particle geometry
-function getTargetPosition(i, type, timeVal) {
+// --------------------------------------------------------------------------
+// FORMULA POSISI — menulis ke `out`, nol alokasi.
+// --------------------------------------------------------------------------
+const _posA = { x: 0, y: 0, z: 0 };
+const _posB = { x: 0, y: 0, z: 0 };
+const _posOut = { x: 0, y: 0, z: 0 };
+
+function getTargetPosition(i, type, timeVal, out) {
     const p = particles[i];
-    let x, y, z;
+    out = out || _posOut;
 
     if (type === 'sphere') {
-        // HERO: 3D BOLA BERPUTAR (THE EYE) - Digeser lebih ke kanan pada desktop
-        const r = 315 * scaleFactor;
-        const currentTheta = p.sphereThetaBase + timeVal * 0.12;
-        const xOffset = isMobile ? 0 : Math.min(420, width * 0.27);
-        x = r * p.sinPhi * Math.cos(currentTheta) + xOffset;
-        y = r * p.sinPhi * Math.sin(currentTheta);
-        z = r * p.cosPhi;
+        const r = 315 * scaleFactor * (isMobile ? 0.8 : 1);
+        const th = p.sphereThetaBase + timeVal * 0.12;
+        const xOff = isMobile ? 0 : Math.min(420, width * 0.27);
+        const yOff = isMobile ? height * 0.33 : 0;
+        out.x = r * p.sinPhi * Math.cos(th) + xOff;
+        out.y = r * p.sinPhi * Math.sin(th) + yOff;
+        out.z = r * p.cosPhi;
     } else if (type === 'terrain') {
-        // ARCHITECT: 3D LANTAI GELOMBANG OMBAK (Terkontrol & Mulus)
         const sizeX = width * 2.2;
         const gridX = (i % 25) / 25 * sizeX - sizeX / 2;
         const row = Math.floor(i / 25);
-        const gridZ = (row / (numParticles / 25)) * 1200 - 600;
-        x = gridX;
-        y = Math.sin((gridX + timeVal * 60) * 0.01) * 75 + (220 * scaleFactor);
-        z = gridZ + ((timeVal * 80) % 200) - 100;
+        out.x = gridX;
+        out.y = Math.sin((gridX + timeVal * 60) * 0.01) * 75 + 220 * scaleFactor;
+        out.z = (row / (numParticles / 25)) * 1200 - 600 + ((timeVal * 80) % 200) - 100;
     } else if (type === 'helix') {
-        // SKILLS: 3D DNA DOUBLE HELIX
         const r = 320 * scaleFactor;
-        const h = 1100 * scaleFactor;
-        const currentTheta = p.helixThetaBase + timeVal;
-        x = r * Math.cos(currentTheta);
-        y = p.helixYRatio * h;
-        z = r * Math.sin(currentTheta);
-        if (p.helixInvert) x *= -1;
+        const th = p.helixThetaBase + timeVal;
+        out.x = r * Math.cos(th) * (p.helixInvert ? -1 : 1);
+        out.y = p.helixYRatio * 1100 * scaleFactor;
+        out.z = r * Math.sin(th);
     } else if (type === 'network') {
-        // PROJECTS: 3D KONSTELASI JARING
         const spread = 1200 * scaleFactor;
-        x = p.netX * spread + Math.sin(timeVal * 0.2) * 100;
-        y = p.netY * spread;
-        z = p.netZ * spread;
-    } else if (type === 'warp') {
-        // FOOTER: 3D HYPERSPACE WARP (DETERMINISTIK & HALUS)
+        out.x = p.netX * spread + Math.sin(timeVal * 0.2) * 100;
+        out.y = p.netY * spread;
+        out.z = p.netZ * spread;
+    } else {
         const spread = 2200 * scaleFactor;
-        x = p.warpX * spread;
-        y = p.warpY * spread;
-        z = ((p.warpOffset + timeVal * p.warpSpeed * 8) % 2000) - 1000;
+        out.x = p.warpX * spread;
+        out.y = p.warpY * spread;
+        out.z = ((p.warpOffset + timeVal * p.warpSpeed * 8) % 2000) - 1000;
     }
 
-    return { x, y, z };
+    return out;
 }
 
 let animTime = 0;
 let lastCursorX = -1000, lastCursorY = -1000;
 let lastCircleRenderX = -1000, lastCircleRenderY = -1000;
 
-function animateParticles() {
-    // Skip rendering if tab is hidden in background
-    if (document.hidden) {
-        requestAnimationFrame(animateParticles);
-        return;
+// --------------------------------------------------------------------------
+// POINTER ENERGY & RIPPLES
+// --------------------------------------------------------------------------
+let pointerEnergy = 0;
+const ripples = [];
+const MAX_RIPPLES = 3;
+
+function addRipple(x, y, strength) {
+    if (ripples.length >= MAX_RIPPLES) ripples.shift();
+    ripples.push({ x, y, born: performance.now(), strength: strength || 1 });
+}
+
+// Dipakai oleh hero "kinetic detonation" — dulu no-op, sekarang ripple nyata.
+function spawnShockwave(x, y) {
+    addRipple(x, y, 1.4);
+}
+
+function bindLiquidPointer() {
+    const wake = (x, y) => {
+        mouseScreenX = x;
+        mouseScreenY = y;
+        pointerEnergy = 1;
+    };
+
+    window.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        if (!t) return;
+        wake(t.clientX, t.clientY);
+        addRipple(t.clientX, t.clientY, 0.8);
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        const t = e.touches[0];
+        if (!t) return;
+        wake(t.clientX, t.clientY);
+    }, { passive: true });
+
+    window.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse') addRipple(e.clientX, e.clientY, 1);
+    }, { passive: true });
+}
+bindLiquidPointer();
+
+// ==========================================================================
+// FLOW RIBBONS — kurva parametrik yang "menggambar" tiap bentuk.
+// Jumlah strand & sample dikelola QUALITY.
+// ==========================================================================
+function getFlowPosition(s, t, type, timeVal, out) {
+    const u = s / QUALITY.strands;
+    const ang = u * Math.PI * 2;
+    out = out || _posOut;
+
+    if (type === 'sphere') {
+        const lat = -Math.PI * 0.42 + u * Math.PI * 0.84;
+        const lon = t * Math.PI * 2 + ang * 0.35 + timeVal * 0.22;
+        const r = 315 * scaleFactor * (isMobile ? 0.8 : 1);
+        const xOff = isMobile ? 0 : Math.min(420, width * 0.27);
+        const yOff = isMobile ? height * 0.33 : 0;
+        const tilt = Math.sin(ang * 2 + timeVal * 0.3) * 0.12;
+        out.x = r * Math.cos(lat + tilt) * Math.cos(lon) + xOff;
+        out.y = r * Math.sin(lat + tilt) + yOff;
+        out.z = r * Math.cos(lat + tilt) * Math.sin(lon);
+        return out;
     }
 
-    ctx.fillStyle = '#050505';
+    if (type === 'terrain') {
+        const x = (t - 0.5) * width * 2.1;
+        out.x = x;
+        out.y = Math.sin((x + timeVal * 60) * 0.01 + u * 2.2) * 75 + 220 * scaleFactor;
+        out.z = (u - 0.5) * 1300 + ((timeVal * 70) % 220) - 110;
+        return out;
+    }
+
+    if (type === 'helix') {
+        const theta = ang * 2 + t * Math.PI * 4 + timeVal * 0.7;
+        const r = 320 * scaleFactor;
+        out.x = r * Math.cos(theta);
+        out.y = (t - 0.5) * 1100 * scaleFactor;
+        out.z = r * Math.sin(theta);
+        return out;
+    }
+
+    if (type === 'network') {
+        // Cangkang orbit konsentris (armillary) — bersih, tidak kusut
+        const tilt = u * Math.PI;                       // 0..π kemiringan tiap cincin
+        const theta = t * Math.PI * 2 + timeVal * 0.18;  // aliran sepanjang cincin
+        const R = (620 + Math.sin(u * 9 + timeVal * 0.4) * 90) * scaleFactor;
+        const cx = Math.cos(theta) * R;
+        const cy = Math.sin(theta) * R;
+        out.x = cx;
+        out.y = cy * Math.sin(tilt);
+        out.z = cy * Math.cos(tilt);
+        return out;
+    }
+
+    const rr = ((t + (s * 0.137) + timeVal * 0.05) % 1) * 2300 * scaleFactor;
+    out.x = Math.cos(ang) * rr;
+    out.y = Math.sin(ang) * rr * 0.7;
+    out.z = (u * 2000 + timeVal * 180) % 2000 - 1000;
+    return out;
+}
+
+const _projA = { x: 0, y: 0, s: 0 };
+const _projB = { x: 0, y: 0, s: 0 };
+const _projOut = { x: 0, y: 0, s: 0 };
+
+function projectPoint(wx, wy, wz, cosMx, sinMx, cosMy, sinMy, fov, out) {
+    const rx = wx * cosMx - wz * sinMx;
+    let rz = wx * sinMx + wz * cosMx;
+    const ry = wy * cosMy - rz * sinMy;
+    rz = wy * sinMy + rz * cosMy;
+
+    const camDist = fov + rz + 350;
+    if (camDist < 60) return null;
+    const sc = fov / camDist;
+    if (sc <= 0 || sc > 3) return null;
+
+    const sx = width / 2 + rx * sc;
+    const sy = height / 2 + ry * sc;
+    if (sx < -120 || sx > width + 120 || sy < -120 || sy > height + 120) return null;
+
+    out = out || _projOut;
+    out.x = sx;
+    out.y = sy;
+    out.s = sc;
+    return out;
+}
+
+function smoothCurve(xs, ys, count) {
+    if (count < 3) return;
+    ctx.moveTo(xs[0], ys[0]);
+    for (let i = 1; i < count - 1; i++) {
+        const mxp = (xs[i] + xs[i + 1]) * 0.5;
+        const myp = (ys[i] + ys[i + 1]) * 0.5;
+        ctx.quadraticCurveTo(xs[i], ys[i], mxp, myp);
+    }
+    ctx.lineTo(xs[count - 1], ys[count - 1]);
+}
+
+// --------------------------------------------------------------------------
+// FRAME BUDGET — pantau fps, turunkan kualitas bila perlu.
+// --------------------------------------------------------------------------
+const perf = { acc: 0, frames: 0, cooldown: 0, downgrades: 0 };
+
+function monitorPerformance(dt) {
+    if (perf.cooldown > 0) { perf.cooldown -= dt; return; }
+    perf.acc += dt;
+    perf.frames++;
+    if (perf.frames < 100) return;
+
+    const avg = perf.acc / perf.frames;
+    perf.acc = 0;
+    perf.frames = 0;
+
+    if (avg > 0.024 && QUALITY.level < 3) {
+        QUALITY.level++;
+        perf.downgrades++;
+        perf.cooldown = 3;
+        applyQuality();
+        initParticles(true);
+    } else if (avg < 0.0125 && QUALITY.level > 0 && perf.downgrades < 2) {
+        QUALITY.level--;
+        perf.cooldown = 8;
+        applyQuality();
+        initParticles(true);
+    }
+}
+
+function drawRipples(now, inkR, inkG, inkB) {
+    if (!ripples.length) return;
+    const LIFE = 1000;
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = ripples.length - 1; i >= 0; i--) {
+        const r = ripples[i];
+        const age = now - r.born;
+        if (age > LIFE) { ripples.splice(i, 1); continue; }
+        const p = age / LIFE;
+        const e = 1 - (1 - p) * (1 - p) * (1 - p);
+        const radius = (14 + e * 140) * Math.max(0.7, scaleFactor);
+        const alpha = (1 - p) * (1 - p) * 0.30 * r.strength;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, radius, 0, 6.2831853);
+        ctx.strokeStyle = `rgba(${inkR}, ${inkG}, ${inkB}, ${alpha})`;
+        ctx.lineWidth = Math.max(0.6, (1 - p) * 2);
+        ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+}
+
+// Batasi render ke ~60fps: iPad Pro 120Hz tidak perlu 2x kerja.
+// Ambang 0.75× (12.5ms) memberi ruang jitter, jadi layar 60Hz tidak pernah
+// kehilangan frame karena timestamp sedikit lebih rapat.
+// Batasi render ke ~60fps: iPad Pro 120Hz tidak perlu 2x kerja.
+// Ambang 0.75× (12.5ms) memberi ruang jitter, jadi layar 60Hz tidak pernah
+// kehilangan frame karena timestamp sedikit lebih rapat.
+const FRAME_MS = 1000 / 60;
+const FRAME_GATE = FRAME_MS * 0.75;
+let lastRender = 0;
+let perfLast = 0;
+
+function animateParticles(nowStamp) {
+    const now = (typeof nowStamp === 'number' ? nowStamp : performance.now());
+
+    requestAnimationFrame(animateParticles);
+    if (document.hidden) return;
+
+    // Frame cap
+    if (now - lastRender < FRAME_GATE) return;
+    const dt = perfLast ? Math.min((now - perfLast) / 1000, 1 / 20) : 1 / 60;
+    perfLast = now;
+    lastRender = now;
+
+    const k = dt * 60;
+    monitorPerformance(dt);
+
+    // Trail: tidak clear total → smear halus seperti tinta
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = QUALITY.level >= 2 ? 'rgba(5, 5, 5, 0.62)' : 'rgba(5, 5, 5, 0.36)';
     ctx.fillRect(0, 0, width, height);
 
-    animTime += 0.02;
+    animTime += (REDUCED_MOTION ? 0.008 : 0.02) * k;
+    pointerEnergy = Math.max(0, pointerEnergy - dt * 0.9);
 
-    mx += (targetMx - mx) * 0.05;
-    my += (targetMy - my) * 0.05;
+    const pe = 1 - Math.pow(0.95, k);
+    mx += (targetMx - mx) * pe;
+    my += (targetMy - my) * pe;
 
-    // Responsive fluid scroll interpolation
     const scrollDiff = targetScrollPercent - scrollPercent;
-    if (Math.abs(scrollDiff) < 0.0003) {
-        scrollPercent = targetScrollPercent;
-    } else {
-        scrollPercent += scrollDiff * 0.26;
-    }
+    if (Math.abs(scrollDiff) < 0.0003) scrollPercent = targetScrollPercent;
+    else scrollPercent += scrollDiff * (1 - Math.pow(0.74, k));
 
     let stage = scrollPercent * 4;
     let index = Math.floor(stage);
     let progress = stage - index;
-
     if (index < 0) index = 0;
-    if (index > 3) {
-        index = 3;
-        progress = 1;
-    }
+    if (index > 3) { index = 3; progress = 1; }
 
     const scenes = ['sphere', 'terrain', 'helix', 'network', 'warp'];
     const currentScene = scenes[index];
@@ -489,119 +788,251 @@ function animateParticles() {
 
     const ease = progress * progress * (3 - 2 * progress);
     const fov = 400 * scaleFactor;
-    const isRedSection = (index === 2 || index === 3);
 
     const cosMx = Math.cos(mx), sinMx = Math.sin(mx);
     const cosMy = Math.cos(my), sinMy = Math.sin(my);
 
+    // Monokrom murni: putih di atas hitam, tanpa tint warna sama sekali.
+    const inkR = 255, inkG = 255, inkB = 255;
+
+    const fluidBase = isMobile ? 150 : (isTablet ? 200 : 270);
+    const fluidR = fluidBase * Math.max(0.75, scaleFactor) * (1 + pointerEnergy * 0.2);
+    const fluidR2 = fluidR * fluidR;
+    const pointerActive = mouseScreenX > 0 && (!isTouch || pointerEnergy > 0.05);
+
+    // Hindari menghitung scene kedua saat transisi hampir selesai
+    const skipBlend = ease < 0.004 || ease > 0.996;
+    const onlyScene = ease < 0.5 ? currentScene : nextScene;
+
     for (let i = 0; i < numParticles; i++) {
-        let p = particles[i];
+        const p = particles[i];
 
-        let pos1 = getTargetPosition(i, currentScene, animTime);
-        let pos2 = getTargetPosition(i, nextScene, animTime);
+        let tx, ty, tz;
+        if (skipBlend) {
+            const pos = getTargetPosition(i, onlyScene, animTime, _posA);
+            tx = pos.x; ty = pos.y; tz = pos.z;
+        } else {
+            const a = getTargetPosition(i, currentScene, animTime, _posA);
+            const b = getTargetPosition(i, nextScene, animTime, _posB);
+            tx = a.x + (b.x - a.x) * ease;
+            ty = a.y + (b.y - a.y) * ease;
+            tz = a.z + (b.z - a.z) * ease;
+        }
 
-        const tx = pos1.x + (pos2.x - pos1.x) * ease;
-        const ty = pos1.y + (pos2.y - pos1.y) * ease;
-        const tz = pos1.z + (pos2.z - pos1.z) * ease;
+        const dX = tx - p.x, dY = ty - p.y, dZ = tz - p.z;
+        const far = (dX > 300 || dX < -300 || dY > 300 || dY < -300);
+        const speed = 1 - Math.pow(far ? 0.45 : 0.58, k);
+        p.x += dX * speed;
+        p.y += dY * speed;
+        p.z += dZ * speed;
 
-        // Snappy smooth convergence (adaptive speed on larger distances)
-        const dX = tx - p.x;
-        const dY = ty - p.y;
-        const dZ = tz - p.z;
-        const followSpeed = (Math.abs(dX) > 300 || Math.abs(dY) > 300) ? 0.55 : 0.42;
-
-        p.x += dX * followSpeed;
-        p.y += dY * followSpeed;
-        p.z += dZ * followSpeed;
-
-        let rx = p.x * cosMx - p.z * sinMx;
+        const rx = p.x * cosMx - p.z * sinMx;
         let rz = p.x * sinMx + p.z * cosMx;
-        let ry = p.y * cosMy - rz * sinMy;
+        const ry = p.y * cosMy - rz * sinMy;
         rz = p.y * sinMy + rz * cosMy;
 
-        // CRITICAL BUG FIX: Near-plane camera clipping (prevents division by zero / millions of pixels spike)
         const camDist = fov + rz + 350;
-        if (camDist < 60) {
-            p.visible = false;
-            continue;
-        }
-
+        if (camDist < 60) { p.visible = false; continue; }
         const scale = fov / camDist;
-        if (scale <= 0 || scale > 2.8) {
-            p.visible = false;
-            continue;
+        if (scale <= 0 || scale > 2.8) { p.visible = false; continue; }
+
+        let sx = width / 2 + rx * scale;
+        let sy = height / 2 + ry * scale;
+
+        if (pointerActive) {
+            const dx = sx - mouseScreenX;
+            const dy = sy - mouseScreenY;
+            const d2 = dx * dx + dy * dy;
+            if (d2 < fluidR2) {
+                const d = Math.sqrt(d2) || 1;
+                const f = 1 - d / fluidR;
+                const force = f * f * (52 + pointerEnergy * 30) * Math.max(0.6, scaleFactor);
+                const nx = dx / d, ny = dy / d;
+                sx += nx * force - ny * force * 0.55;
+                sy += ny * force + nx * force * 0.55;
+            }
         }
 
-        const screenX = width / 2 + rx * scale;
-        const screenY = height / 2 + ry * scale;
-
-        // Frustum culling
-        if (screenX < -50 || screenX > width + 50 || screenY < -50 || screenY > height + 50) {
+        if (sx < -80 || sx > width + 80 || sy < -80 || sy > height + 80) {
             p.visible = false;
             continue;
         }
 
         p.visible = true;
-        p.sx = screenX;
-        p.sy = screenY;
+        p.sx = sx;
+        p.sy = sy;
         p.scale = scale;
-        p.size = Math.max(0.7, Math.min(5.5, scale * 4.2));
+        p.size = scale * 4.2;
+        p.alpha = Math.max(0.08, Math.min(1, (scale - 0.42) * 1.35));
     }
 
-    // PASS 1: Subtle background particles (depth perspective)
-    ctx.fillStyle = isRedSection ? 'rgba(235, 77, 75, 0.4)' : 'rgba(255, 255, 255, 0.4)';
-    ctx.beginPath();
-    for (let i = 0; i < numParticles; i++) {
-        const p = particles[i];
-        if (!p.visible || p.scale >= 0.85) continue;
-        ctx.moveTo(p.sx + p.size, p.sy);
-        ctx.arc(p.sx, p.sy, p.size, 0, 6.2831853);
+    // ------------------------------------------------------------------
+    // PASS 1 — GLOW (satu sprite per partikel, hanya yang cukup dekat)
+    // ------------------------------------------------------------------
+    if (QUALITY.glow) {
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < numParticles; i++) {
+            const p = particles[i];
+            if (!p.visible || p.alpha < 0.2) continue;
+            const gs = (10 + p.size * 3) * Math.max(0.7, scaleFactor);
+            ctx.globalAlpha = p.alpha * 0.14;
+            ctx.drawImage(whiteSprite, p.sx - gs * 0.5, p.sy - gs * 0.5, gs, gs);
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
     }
-    ctx.fill();
 
-    // PASS 2: Crisp glowing foreground particles
-    ctx.fillStyle = isRedSection ? '#eb4d4b' : '#ffffff';
-    ctx.beginPath();
-    for (let i = 0; i < numParticles; i++) {
-        const p = particles[i];
-        if (!p.visible || p.scale < 0.85) continue;
-        ctx.moveTo(p.sx + p.size, p.sy);
-        ctx.arc(p.sx, p.sy, p.size, 0, 6.2831853);
-    }
-    ctx.fill();
+    // ------------------------------------------------------------------
+    // PASS 2 — FLOW RIBBONS (2 stroke: aura + inti)
+    // ------------------------------------------------------------------
+    const strands = QUALITY.strands;
+    const samples = QUALITY.samples;
+    const maxPts = 96;
 
-    // Dynamic constellation lines on Projects section (Zero Math.sqrt, strictly bounded)
-    if ((index === 3 || (index === 2 && progress > 0.6)) && scaleFactor > 0.5) {
-        ctx.lineWidth = 0.8;
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.beginPath();
-        const maxDistSq = (120 * scaleFactor) ** 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalCompositeOperation = 'lighter';
 
-        for (let i = 0; i < numParticles; i += 3) {
-            const p1 = particles[i];
-            if (!p1.visible) continue;
-            for (let j = i + 1; j < i + 7; j++) {
-                if (j >= numParticles) break;
-                const p2 = particles[j];
-                if (!p2.visible) continue;
+    for (let s = 0; s < strands; s++) {
+        const presence = 0.62 + 0.38 * Math.sin(animTime * 0.5 + s * 0.9);
+        if (presence < 0.22) continue;
 
-                const dx = p1.sx - p2.sx;
-                const dy = p1.sy - p2.sy;
-                const distSq = dx * dx + dy * dy;
+        let count = 0;
+        let depthSum = 0;
 
-                if (distSq < maxDistSq) {
-                    ctx.moveTo(p1.sx, p1.sy);
-                    ctx.lineTo(p2.sx, p2.sy);
+        // Konstanta per-strand, dihitung sekali (bukan per sampel)
+        const wob = 20 * Math.max(0.6, scaleFactor);
+        const wobY = wob * 0.8;
+        const phA = s * 0.8;
+        const phB = s * 0.6;
+        const invSamples = 1 / (samples - 1);
+
+        for (let k2 = 0; k2 < samples; k2++) {
+            const t = k2 * invSamples;
+
+            let wx, wy, wz;
+            if (skipBlend) {
+                const a = getFlowPosition(s, t, onlyScene, animTime, _posA);
+                wx = a.x; wy = a.y; wz = a.z;
+            } else {
+                const a = getFlowPosition(s, t, currentScene, animTime, _posA);
+                const b = getFlowPosition(s, t, nextScene, animTime, _posB);
+                wx = a.x + (b.x - a.x) * ease;
+                wy = a.y + (b.y - a.y) * ease;
+                wz = a.z + (b.z - a.z) * ease;
+            }
+
+            wx += Math.sin(t * 6.2 + animTime * 1.35 + phA) * wob;
+            wy += Math.cos(t * 5.1 - animTime * 1.05 + phB) * wobY;
+
+            const pr = projectPoint(wx, wy, wz, cosMx, sinMx, cosMy, sinMy, fov);
+            if (!pr) continue;
+
+            let px = pr.x;
+            let py = pr.y;
+
+            if (pointerActive) {
+                const dx = px - mouseScreenX;
+                const dy = py - mouseScreenY;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < fluidR2) {
+                    const d = Math.sqrt(d2) || 1;
+                    const f = 1 - d / fluidR;
+                    const force = f * f * (64 + pointerEnergy * 36) * Math.max(0.6, scaleFactor);
+                    px += (dx / d) * force - (dy / d) * force * 0.6;
+                    py += (dy / d) * force + (dx / d) * force * 0.6;
                 }
             }
+
+            if (count < maxPts) {
+                ribbonBufX[count] = px;
+                ribbonBufY[count] = py;
+                count++;
+                depthSum += pr.s;
+            }
         }
+        if (count < 3) continue;
+
+        const depthT = Math.max(0, Math.min(1, (depthSum / count - 0.45) / 0.9));
+        const breath = presence * (0.5 + depthT * 0.5);
+
+        // Aura lebar & tipis
+        ctx.beginPath();
+        smoothCurve(ribbonBufX, ribbonBufY, count);
+        ctx.strokeStyle = `rgba(${inkR}, ${inkG}, ${inkB}, ${(0.03 + depthT * 0.09) * breath})`;
+        ctx.lineWidth = (7 + depthT * 13) * Math.max(0.7, scaleFactor);
+        ctx.stroke();
+
+        // Inti terang
+        ctx.beginPath();
+        smoothCurve(ribbonBufX, ribbonBufY, count);
+        ctx.strokeStyle = `rgba(${inkR}, ${inkG}, ${inkB}, ${(0.10 + depthT * 0.44) * breath})`;
+        ctx.lineWidth = 0.8 + depthT * 1.2;
+        ctx.stroke();
+
+        // Kepala tinta
+        if (QUALITY.head) {
+            const hi = Math.floor(((animTime * 0.10 + s * 0.11) % 1) * (count - 1));
+            const hx = ribbonBufX[hi];
+            const hy = ribbonBufY[hi];
+            const hr = (1.8 + depthT * 2.4) * Math.max(0.8, scaleFactor);
+            ctx.beginPath();
+            ctx.arc(hx, hy, hr, 0, 6.2831853);
+            ctx.fillStyle = `rgba(${inkR}, ${inkG}, ${inkB}, ${0.55 * breath})`;
+            ctx.fill();
+        }
+    }
+
+    ctx.globalCompositeOperation = 'source-over';
+
+    // ------------------------------------------------------------------
+    // PASS 3 — WEAVE (hanya desktop)
+    // ------------------------------------------------------------------
+    if (QUALITY.weave && scaleFactor > 0.5) {
+        ctx.beginPath();
+        for (let s = 0; s < strands - 1; s++) {
+            const t = 0.5 + 0.35 * Math.sin(animTime * 0.4 + s);
+            const a1 = getFlowPosition(s, t, currentScene, animTime, _posA);
+            const a2 = getFlowPosition(s, t, nextScene, animTime, _posB);
+            const ax = a1.x + (a2.x - a1.x) * ease, ay = a1.y + (a2.y - a1.y) * ease, az = a1.z + (a2.z - a1.z) * ease;
+            const b1 = getFlowPosition(s + 1, t, currentScene, animTime, _posA);
+            const b2 = getFlowPosition(s + 1, t, nextScene, animTime, _posB);
+            const bx = b1.x + (b2.x - b1.x) * ease, by = b1.y + (b2.y - b1.y) * ease, bz = b1.z + (b2.z - b1.z) * ease;
+            const pa = projectPoint(ax, ay, az, cosMx, sinMx, cosMy, sinMy, fov, _projA);
+            const pb = projectPoint(bx, by, bz, cosMx, sinMx, cosMy, sinMy, fov, _projB);
+            if (!pa || !pb) continue;
+            const dx = pa.x - pb.x;
+            const dy = pa.y - pb.y;
+            if (dx * dx + dy * dy > (420 * scaleFactor) ** 2) continue;
+            ctx.moveTo(pa.x, pa.y);
+            ctx.lineTo(pb.x, pb.y);
+        }
+        ctx.strokeStyle = `rgba(${inkR}, ${inkG}, ${inkB}, 0.05)`;
+        ctx.lineWidth = 0.6;
         ctx.stroke();
     }
 
+    // ------------------------------------------------------------------
+    // PASS 4 — RIPPLES + DROPLETS
+    // ------------------------------------------------------------------
+    drawRipples(now, inkR, inkG, inkB);
+
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.beginPath();
+    for (let i = 0; i < numParticles; i++) {
+        const p = particles[i];
+        if (!p.visible || p.scale < 1.02) continue;
+        ctx.moveTo(p.sx + p.size * 0.85, p.sy);
+        ctx.arc(p.sx, p.sy, p.size * 0.85, 0, 6.2831853);
+    }
+    ctx.fillStyle = `rgba(${inkR}, ${inkG}, ${inkB}, 0.9)`;
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
     ctx.globalAlpha = 1;
 
-    // HARDWARE-ACCELERATED ZERO-JANK CURSOR INTERPOLATION
-    if (!isMobile && cursorDot && cursorCircle && mouseScreenX > 0) {
+    // Cursor interpolation (desktop saja)
+    if (!isMobile && !isTouch && cursorDot && cursorCircle && mouseScreenX > 0) {
         if (cursorCircleX === -1000) {
             cursorCircleX = mouseScreenX;
             cursorCircleY = mouseScreenY;
@@ -622,7 +1053,6 @@ function animateParticles() {
             lastCircleRenderY = cursorCircleY;
         }
 
-        // Throttle Coordinate HUD string update (~120ms)
         if (cursorCoord) {
             cursorCoord.style.transform = `translate3d(${mouseScreenX + 22}px, ${mouseScreenY + 14}px, 0)`;
             coordCounter = (coordCounter + 1) % 8;
@@ -631,13 +1061,10 @@ function animateParticles() {
             }
         }
 
-        // Project Hover Preview follows mouse via GPU translate3d
         if (hoverPreview && hoverPreview.classList.contains('active')) {
             hoverPreview.style.transform = `translate3d(${mouseScreenX + 30}px, ${mouseScreenY - 40}px, 0)`;
         }
     }
-
-    requestAnimationFrame(animateParticles);
 }
 
 requestAnimationFrame(animateParticles);
@@ -772,6 +1199,8 @@ window.addEventListener('mousemove', (e) => {
     targetMy = (e.clientY / height) * 2 - 1;
     mouseScreenX = e.clientX;
     mouseScreenY = e.clientY;
+    // Bangunkan cairan: radius & gaya dorong naik sesaat saat mouse bergerak
+    pointerEnergy = 1;
 }, { passive: true });
 
 function initHoverTargets() {
@@ -1048,7 +1477,10 @@ function renderProjects(query = '') {
                 data-github="${p.github || '#'}">
                 <div class="p-left">
                     <span class="p-num">${numStr}</span>
-                    <span class="p-title">${escapeHtml(p.subtitle || p.title)}</span>
+                    <div class="p-title-wrap">
+                        <span class="p-title">${escapeHtml(p.title)}</span>
+                        ${p.subtitle ? `<span class="p-sub-tag">// ${escapeHtml(p.subtitle)}</span>` : ''}
+                    </div>
                 </div>
                 <div class="p-right">
                     <span class="p-stack-preview">${escapeHtml(p.stack)}</span>
@@ -1064,10 +1496,19 @@ function renderProjects(query = '') {
         container.querySelectorAll('.project-item').forEach(item => {
             item.addEventListener('mouseenter', (e) => {
                 const img = item.getAttribute('data-img');
-                if (img) {
-                    previewImg.src = img;
-                    hoverPreview.classList.add('active');
-                }
+                const title = item.getAttribute('data-title') || 'PROJECT';
+                const stack = item.getAttribute('data-stack') || '';
+                const num = item.querySelector('.p-num')?.textContent || '01';
+
+                if (previewImg && img) previewImg.src = img;
+                const titleEl = document.getElementById('preview-hud-title');
+                if (titleEl) titleEl.textContent = title;
+                const stackEl = document.getElementById('preview-hud-stack');
+                if (stackEl) stackEl.textContent = stack;
+                const idEl = document.getElementById('preview-hud-id');
+                if (idEl) idEl.textContent = `SYS.${num} // ARCHIVE`;
+
+                hoverPreview.classList.add('active');
             });
             item.addEventListener('mouseleave', () => {
                 hoverPreview.classList.remove('active');
@@ -1241,7 +1682,7 @@ function handleCmsLogin(e) {
     const errBox = document.getElementById('lock-error');
     const entered = passInput ? passInput.value.trim() : '';
 
-    const currentPass = store.data.settings?.passcode || 'admin123';
+    const currentPass = store.data.settings?.passcode || 'chya1524';
     if (entered === currentPass) {
         isCmsAuthenticated = true;
         if (errBox) errBox.innerText = '';
@@ -1861,7 +2302,7 @@ function setupHeaderInteractiveBrand() {
 
 function initInteractiveCardTilt() {
     if (isMobile) return;
-    const cards = document.querySelectorAll('.philosophy-card, .stack-category-card, .timeline-item');
+    const cards = document.querySelectorAll('.philosophy-card, .stack-category-card, .timeline-card');
     cards.forEach(card => {
         if (card.dataset.tiltBound) return;
         card.dataset.tiltBound = 'true';

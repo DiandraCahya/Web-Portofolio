@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=Syncopate:wght@400;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=3.5">
 </head>
 
 <body class="intro-active">
@@ -72,9 +72,23 @@
     <!-- FLOATING PROJECT PREVIEW TOOLTIP (DESKTOP) -->
     <div id="project-hover-preview" class="project-hover-preview" aria-hidden="true">
         <div class="preview-inner">
-            <img id="preview-img" src="GatotACMobil.webp" alt="Project Preview">
-            <div class="preview-overlay">
+            <div class="preview-hud-top">
+                <div class="preview-hud-tag">
+                    <span class="preview-pulse-dot"></span>
+                    <span id="preview-hud-id">SYS.01 // ARCHIVE</span>
+                </div>
                 <span id="preview-badge" class="preview-badge">LIVE SITE</span>
+            </div>
+            <div class="preview-media-box">
+                <img id="preview-img" src="GatotACMobil.webp" alt="Project Preview">
+                <div class="preview-scanline"></div>
+            </div>
+            <div class="preview-hud-bottom">
+                <div class="preview-hud-text">
+                    <span id="preview-hud-title" class="preview-hud-title">GATOT AC MOBIL</span>
+                    <span id="preview-hud-stack" class="preview-hud-stack">Laravel / Livewire / MySQL</span>
+                </div>
+                <span class="preview-hud-action">VIEW ↗</span>
             </div>
         </div>
     </div>
@@ -140,7 +154,7 @@
                     <p class="lock-desc">Enter your administrative passcode to manage portfolio items, skills, and settings.</p>
                     <form id="cms-login-form" onsubmit="handleCmsLogin(event)">
                         <div class="input-group">
-                            <input type="password" id="cms-passcode-input" class="cyber-input" placeholder="Passcode (Default: admin123)" required autofocus autocomplete="current-password">
+                            <input type="password" id="cms-passcode-input" class="cyber-input" placeholder="Passcode (Default: chya1524)" required autofocus autocomplete="current-password">
                         </div>
                         <div id="lock-error" class="lock-error"></div>
                         <div class="lock-btn-row">
@@ -148,7 +162,7 @@
                             <button type="button" class="cyber-btn hover-target" onclick="closeCmsModal()">CANCEL</button>
                         </div>
                     </form>
-                    <div class="lock-hint">HINT: Default password is <code>admin123</code>. You can change it anytime in settings.</div>
+                    <div class="lock-hint">HINT: Default password is <code>chya1524</code>. You can change it anytime in settings.</div>
                 </div>
             </div>
 
@@ -595,70 +609,166 @@
             </div>
 
             <div class="timeline-container">
-                <!-- ITEM 1 -->
-                <div class="timeline-item hover-target">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-header">
+                <!-- CENTRAL KINETIC SPINE -->
+                <div class="timeline-spine">
+                    <div class="timeline-spine-beam"></div>
+                </div>
+
+                <!-- TOP ENDPOINT MARKER -->
+                <div class="timeline-endpoint top-endpoint">
+                    <span class="endpoint-dot"></span>
+                    <span class="endpoint-label">SYS.CHRONO // REALTIME TIMELINE</span>
+                </div>
+
+                <!-- ITEM 1 (LEFT) -->
+                <div class="timeline-item timeline-left" data-index="01">
+                    <div class="timeline-node">
+                        <span class="node-ring"></span>
+                        <span class="node-core"></span>
+                        <span class="node-index">01</span>
+                    </div>
+                    <div class="timeline-branch">
+                        <span class="branch-pulse"></span>
+                    </div>
+
+                    <div class="timeline-card hover-target">
+                        <div class="timeline-card-header">
+                            <div class="timeline-meta-badge">
+                                <span class="node-id-tag">[ NODE // 01 ]</span>
+                                <span class="status-live-tag"><span class="hud-status-dot pulse-dot"></span>ACTIVE DEPLOYMENT</span>
+                            </div>
+                            <span class="timeline-period">2024 — PRESENT</span>
+                        </div>
                         <h3 class="timeline-role">Kinetic System Architect &amp; Research Engineer</h3>
-                        <span class="timeline-period">2024 — PRESENT</span>
-                    </div>
-                    <div class="timeline-company">Bespoke Digital Lab &amp; Atelier // Jakarta &amp; Remote</div>
-                    <ul class="timeline-points">
-                        <li>Architecting high-throughput state synchronization engines, multi-tenant schemas, and real-time WebSocket pipelines.</li>
-                        <li>Implementing Redis caching hierarchies and query index optimizations, compressing latencies by over 40%.</li>
-                        <li>Crafting bespoke tactile interfaces bridging sub-pixel spring physics with decoupled backend services.</li>
-                    </ul>
-                    <div class="timeline-tech-tags">
-                        <span>Laravel</span>
-                        <span>Node.js</span>
-                        <span>MySQL</span>
-                        <span>Redis</span>
-                        <span>Docker</span>
-                        <span>Anime.js</span>
+                        <div class="timeline-company">Bespoke Digital Lab &amp; Atelier // Jakarta &amp; Remote</div>
+                        <ul class="timeline-points">
+                            <li>Architecting high-throughput state synchronization engines, multi-tenant schemas, and real-time WebSocket pipelines.</li>
+                            <li>Implementing Redis caching hierarchies and query index optimizations, compressing latencies by over 40%.</li>
+                            <li>Crafting bespoke tactile interfaces bridging sub-pixel spring physics with decoupled backend services.</li>
+                        </ul>
+                        <div class="timeline-tech-tags">
+                            <span>Laravel</span>
+                            <span>Node.js</span>
+                            <span>MySQL</span>
+                            <span>Redis</span>
+                            <span>Docker</span>
+                            <span>Anime.js</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- ITEM 2 -->
-                <div class="timeline-item hover-target">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-header">
+                <!-- ITEM 2 (RIGHT) -->
+                <div class="timeline-item timeline-right" data-index="02">
+                    <div class="timeline-node">
+                        <span class="node-ring"></span>
+                        <span class="node-core"></span>
+                        <span class="node-index">02</span>
+                    </div>
+                    <div class="timeline-branch">
+                        <span class="branch-pulse"></span>
+                    </div>
+
+                    <div class="timeline-card hover-target">
+                        <div class="timeline-card-header">
+                            <div class="timeline-meta-badge">
+                                <span class="node-id-tag">[ NODE // 02 ]</span>
+                                <span class="status-done-tag">MILESTONE COMPLETE</span>
+                            </div>
+                            <span class="timeline-period">2023 — 2024</span>
+                        </div>
                         <h3 class="timeline-role">Full Stack Systems Engineer</h3>
-                        <span class="timeline-period">2023 — 2024</span>
-                    </div>
-                    <div class="timeline-company">Autonomous Web Applications &amp; High-Load Systems</div>
-                    <ul class="timeline-points">
-                        <li>Engineered Gatot AC Mobil reservation platform featuring instant real-time slot scheduling and automated customer routing.</li>
-                        <li>Developed the AWA brand platform with fluid responsive motion and optimal WebP asset compression workflows.</li>
-                        <li>Maintained CI/CD pipelines, container orchestration, and high-security Linux server deployments.</li>
-                    </ul>
-                    <div class="timeline-tech-tags">
-                        <span>Laravel</span>
-                        <span>Livewire</span>
-                        <span>Express</span>
-                        <span>React</span>
-                        <span>MySQL</span>
+                        <div class="timeline-company">Autonomous Web Applications &amp; High-Load Systems</div>
+                        <ul class="timeline-points">
+                            <li>Engineered Gatot AC Mobil reservation platform featuring instant real-time slot scheduling and automated customer routing.</li>
+                            <li>Developed the AWA brand platform with fluid responsive motion and optimal WebP asset compression workflows.</li>
+                            <li>Maintained CI/CD pipelines, container orchestration, and high-security Linux server deployments.</li>
+                        </ul>
+                        <div class="timeline-tech-tags">
+                            <span>Laravel</span>
+                            <span>Livewire</span>
+                            <span>Express</span>
+                            <span>React</span>
+                            <span>MySQL</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- ITEM 3 -->
-                <div class="timeline-item hover-target">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-header">
+                <!-- ITEM 3 (LEFT) -->
+                <div class="timeline-item timeline-left" data-index="03">
+                    <div class="timeline-node">
+                        <span class="node-ring"></span>
+                        <span class="node-core"></span>
+                        <span class="node-index">03</span>
+                    </div>
+                    <div class="timeline-branch">
+                        <span class="branch-pulse"></span>
+                    </div>
+
+                    <div class="timeline-card hover-target">
+                        <div class="timeline-card-header">
+                            <div class="timeline-meta-badge">
+                                <span class="node-id-tag">[ NODE // 03 ]</span>
+                                <span class="status-done-tag">MILESTONE COMPLETE</span>
+                            </div>
+                            <span class="timeline-period">2022 — 2023</span>
+                        </div>
                         <h3 class="timeline-role">Creative Technologist &amp; Interaction Specialist</h3>
-                        <span class="timeline-period">2022 — 2023</span>
+                        <div class="timeline-company">Experimental Interface Labs &amp; Kinetic Experiences</div>
+                        <ul class="timeline-points">
+                            <li>Crafted Find Utopia digital experience inspired by speculative OS navigation, particle dynamics, and custom physics.</li>
+                            <li>Engineered reusable modular Anime.js choreography libraries and custom HTML5 canvas shaders.</li>
+                            <li>Integrated visceral kinetic feedback, real-time audio synthesized soundscapes, and procedural particle morphing.</li>
+                        </ul>
+                        <div class="timeline-tech-tags">
+                            <span>JavaScript</span>
+                            <span>React</span>
+                            <span>Anime.js</span>
+                            <span>HTML5 Canvas</span>
+                            <span>CSS Architecture</span>
+                        </div>
                     </div>
-                    <div class="timeline-company">Experimental Interface Labs &amp; Kinetic Experiences</div>
-                    <ul class="timeline-points">
-                        <li>Crafted Find Utopia digital experience inspired by speculative OS navigation, particle dynamics, and custom physics.</li>
-                        <li>Engineered reusable modular Anime.js choreography libraries and custom HTML5 canvas shaders.</li>
-                    </ul>
-                    <div class="timeline-tech-tags">
-                        <span>JavaScript</span>
-                        <span>React</span>
-                        <span>Anime.js</span>
-                        <span>HTML5 Canvas</span>
-                        <span>CSS Architecture</span>
+                </div>
+
+                <!-- ITEM 4 (RIGHT) -->
+                <div class="timeline-item timeline-right" data-index="04">
+                    <div class="timeline-node">
+                        <span class="node-ring"></span>
+                        <span class="node-core"></span>
+                        <span class="node-index">04</span>
                     </div>
+                    <div class="timeline-branch">
+                        <span class="branch-pulse"></span>
+                    </div>
+
+                    <div class="timeline-card hover-target">
+                        <div class="timeline-card-header">
+                            <div class="timeline-meta-badge">
+                                <span class="node-id-tag">[ NODE // 04 ]</span>
+                                <span class="status-done-tag">FOUNDATIONAL ERA</span>
+                            </div>
+                            <span class="timeline-period">2021 — 2022</span>
+                        </div>
+                        <h3 class="timeline-role">Frontend &amp; UI Systems Developer</h3>
+                        <div class="timeline-company">Interface Prototyping &amp; Open Source Labs // Remote</div>
+                        <ul class="timeline-points">
+                            <li>Built responsive, cross-browser web interfaces and interactive components with vanilla JavaScript and modern CSS architectures.</li>
+                            <li>Developed experimental micro-interaction libraries, fluid canvas animations, and decoupled API consumption layers.</li>
+                            <li>Engineered performance-optimized DOM manipulation flows and component-driven styles.</li>
+                        </ul>
+                        <div class="timeline-tech-tags">
+                            <span>JavaScript (ES6+)</span>
+                            <span>HTML5 / CSS3</span>
+                            <span>REST APIs</span>
+                            <span>UI/UX Motion</span>
+                            <span>Git</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM ENDPOINT MARKER -->
+                <div class="timeline-endpoint bottom-endpoint">
+                    <span class="endpoint-dot"></span>
+                    <span class="endpoint-label">SYS.CHRONO // GENESIS ARCHIVE</span>
                 </div>
             </div>
         </section>
@@ -751,7 +861,7 @@
 
     </main>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=3.5"></script>
 </body>
 
 </html>
